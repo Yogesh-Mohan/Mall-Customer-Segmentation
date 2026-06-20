@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom" style="border-color: rgba(255,255,255,0.1) !important;">
+    <h1 class="h2 text-gradient">Dashboard</h1>
+</div>
+
+<div class="row text-center mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h5 class="form-label">Total Customers</h5>
+            <h2 id="total-customers" class="text-gradient fw-bold">--</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h5 class="form-label">Avg Income</h5>
+            <h2 id="avg-income" class="text-gradient fw-bold">--</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h5 class="form-label">Avg Spending</h5>
+            <h2 id="avg-spending" class="text-gradient fw-bold">--</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4">
+            <h5 class="form-label">Segments</h5>
+            <h2 id="num-segments" class="text-gradient fw-bold">--</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3 text-gradient">Customer Segments Distribution</h5>
+            <canvas id="segmentChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 mb-4 h-100">
+            <h5 class="mb-3 text-gradient">Quick Actions</h5>
+            <p class="form-label">Predict segment for new customer:</p>
+            <form id="prediction-form">
+                <input type="number" id="pred-age" class="form-control mb-3" placeholder="Age" required>
+                <select id="pred-gender" class="form-control mb-3" required>
+                    <option value="" disabled selected style="color: rgba(255,255,255,0.4);">Select Gender</option>
+                    <option value="Male" style="color: #000;">Male</option>
+                    <option value="Female" style="color: #000;">Female</option>
+                </select>
+                <input type="number" id="pred-income" class="form-control mb-3" placeholder="Annual Income (k$)" required>
+                <input type="number" id="pred-spending" class="form-control mb-4" placeholder="Spending Score (1-100)" required>
+                <button type="submit" class="btn btn-primary w-100">Predict Segment</button>
+            </form>
+            <div id="pred-result" class="mt-4 alert d-none border-0" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Fetch Dashboard Stats
+    fetch('/api/dashboard_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-customers').innerText = data.total_customers;
+            document.getElementById('avg-income').innerText = "$" + data.avg_income.toFixed(2) + "k";
+            document.getElementById('avg-spending').innerText = data.avg_spending.toFixed(2);
+            document.getElementById('num-segments').innerText = data.num_segments;
+            
+            // Render Chart
+            var ctx = document.getElementById('segmentChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.distribution_labels,
+                    datasets: [{
+                        label: 'Number of Customers',
+                        data: data.distribution_values,
+                        backgroundColor: [
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(236, 72, 153, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(236, 72, 153, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1' } }
+                    },
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#cbd5e1' }
+                        },
+                        x: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#cbd5e1' }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Prediction Form
+    document.getElementById('prediction-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const payload = {
+            age: document.getElementById('pred-age').value,
+            gender: document.getElementById('pred-gender').value,
+            annual_income: document.getElementById('pred-income').value,
+            spending_score: document.getElementById('pred-spending').value
+        };
+        
+        fetch('/api/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            const resDiv = document.getElementById('pred-result');
+            resDiv.classList.remove('d-none', 'alert-danger', 'alert-success');
+            if(data.error) {
+                resDiv.classList.add('alert-danger');
+                resDiv.innerText = data.error;
+            } else {
+                resDiv.classList.add('alert-success');
+                resDiv.innerHTML = `<strong>Segment:</strong> ${data.customer_type}<br><strong>Recommendation:</strong> ${data.marketing_recommendation}`;
+            }
+        });
+    });
+</script>
+{% endblock %}

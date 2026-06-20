@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+database.db
+models/*.pkl
+.env
+.idea/
+.vscode/
+*.log
