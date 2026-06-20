@@ -1,3 +1,4 @@
+CITS4182- YOGESHWARAKANNAN M
 # Mall Customer Segmentation and Customer Intelligence System
 
 ![Dashboard Preview](https://img.shields.io/badge/Status-Active-success) ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg) ![Flask](https://img.shields.io/badge/Framework-Flask-black.svg)
